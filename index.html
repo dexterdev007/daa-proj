@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NP-Completeness Visualizer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -11,19 +12,19 @@
     <style>
         /* Define Dark Mode Variables for the visual theme */
         :root {
-            --bg-dark: #121A26; /* Deep background color */
-            --bg-card: #1C2738; /* Card/Content background */
+            --bg-dark: #0a0f1f; /* Deep background color */
+            --bg-card: #1e293b; /* Card/Container background */
             --text-main: #E5E7EB; /* Light text */
             --text-secondary: #9CA3AF; /* Gray text */
             --border-color: #374151; /* Border color */
             --primary-blue: #3B82F6; /* Active blue */
-            --primary-indigo: #4F46E5; /* Indigo accent */
+            --primary-indigo: #8b5cf6; /* Indigo accent */
             --code-bg: #111827; /* Code block background */
         }
 
         body {
             font-family: 'Inter', sans-serif;
-            background-color: var(--bg-dark);
+            background: linear-gradient(135deg, var(--bg-dark) 0%, #1a1f3f 100%);
             color: var(--text-main);
             transition: background-color 0.3s;
         }
@@ -59,8 +60,8 @@
             transition: all 0.3s;
         }
         .step-item.active .step-circle {
-            background-color: var(--primary-blue);
-            border-color: var(--primary-blue);
+            background-color: var(--primary-indigo);
+            border-color: var(--primary-indigo);
             color: white;
         }
         .step-line {
@@ -76,7 +77,7 @@
         .step-line-segment {
             position: absolute;
             height: 2px;
-            background-color: var(--primary-blue);
+            background-color: var(--primary-indigo);
             transition: background-color 0.3s, width 0.5s ease-out;
             top: 17px;
         }
@@ -92,8 +93,8 @@
 
         /* Styling for the graph container */
         #clique-graph-container {
-            background-color: var(--bg-card);
-            border: 1px solid var(--border-color);
+            background-color: #0f172a;
+            border: 2px solid var(--primary-indigo);
             touch-action: none;
             display: flex; 
             align-items: center;
@@ -112,48 +113,59 @@
             transform: translateY(0);
         }
         
-        /* Graph Styles */
-        .graph-node-circle {
-            stroke-width: 2px;
-            cursor: grab;
-            transition: stroke 0.3s, stroke-width 0.1s, fill 0.3s;
+        /* Cytoscape.js custom styles */
+        .cytoscape-container {
+            width: 100%;
+            height: 100%;
         }
-        .graph-node-label {
-            font-family: 'Source Code Pro', monospace;
-            font-weight: 500;
-            fill: white;
-            pointer-events: none;
-            text-anchor: middle;
-            dominant-baseline: central;
+        
+        /* Clause card styling */
+        .clause-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin: 0.5rem 0;
         }
-        .graph-edge {
-            stroke-width: 2;
-            transition: opacity 0.3s, stroke 0.3s;
+        
+        .clause-number {
+            color: var(--primary-indigo);
+            font-weight: bold;
+            margin-right: 0.5rem;
         }
-        .graph-node-group {
-            opacity: 0;
-            transition: opacity 0.5s;
+        
+        /* Button hover effects */
+        .btn-primary {
+            background-color: var(--primary-indigo);
+            transition: all 0.3s ease;
         }
-
-        /* Advanced Visualization Styles */
-        .clique-node-highlight {
-            stroke-width: 4px !important;
-            fill: #FBBF24 !important; /* Yellow-400 */
+        
+        .btn-primary:hover {
+            background-color: #7c3aed;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(139, 92, 246, 0.3);
         }
-        .clique-edge-highlight {
-            stroke: #FBBF24 !important; /* Yellow-400 */
-            stroke-width: 3px !important;
-            opacity: 1 !important;
+        
+        .btn-success {
+            background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-success:hover {
+            background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(6, 182, 212, 0.4);
         }
     </style>
 </head>
 <body class="min-h-screen">
     
-    <div class="bg-gradient-to-br from-indigo-600 to-blue-500 py-16 px-4">
+    <div class="bg-gradient-to-br from-indigo-600 to-purple-600 py-16 px-4">
         <div class="max-w-6xl mx-auto text-center">
             <header class="flex justify-between items-center mb-10">
                 <div class="flex items-center space-x-2 text-white">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.525.434.619.689 1.066-2.572z"></path></svg>
+                    <span class="text-lg font-semibold">NP-Completeness Visualizer</span>
                 </div>
                 <button id="dark-mode-toggle" class="p-2 rounded-full text-white hover:bg-white/20 transition" aria-label="Toggle Dark Mode">
                     <svg id="moon-icon" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
@@ -166,17 +178,17 @@
             </p>
 
             <div class="grid md:grid-cols-3 gap-6 text-left">
-                <div class="bg-white/10 p-6 rounded-xl border border-white/20 hover:bg-white/20 transition duration-300">
+                <div class="bg-white/10 p-6 rounded-xl border border-white/20 hover:bg-white/20Transition duration-300">
                     <div class="text-4xl text-yellow-300 mb-3">💡</div>
                     <h3 class="text-xl font-bold text-white mb-2">Learn SAT</h3>
                     <p class="text-indigo-200 text-sm">Understand Boolean satisfiability problems and their significance in computer science.</p>
                 </div>
-                <div class="bg-white/10 p-6 rounded-xl border border-white/20 hover:bg-white/20 transition duration-300">
+                <div class="bg-white/10 p-6 rounded-xl-border border-white/20 hover:bg-white/20Transition duration-300">
                     <div class="text-4xl text-green-300 mb-3">➗</div>
                     <h3 class="text-xl font-bold text-white mb-2">See 3-CNF</h3>
                     <p class="text-indigo-200 text-sm">Watch formulas transform into 3-conjunctive normal form, the first step of the reduction.</p>
                 </div>
-                <div class="bg-white/10 p-6 rounded-xl border border-white/20 hover:bg-white/20 transition duration-300">
+                <div class="bg-white/10 p-6 rounded-xl-border border-white/20 hover:bg-white/20Transition duration-500">
                     <div class="text-4xl text-red-300 mb-3">🕸️</div>
                     <h3 class="text-xl font-bold text-white mb-2">Visualize Clique</h3>
                     <p class="text-indigo-200 text-sm">Explore graph representations and the final clique problem reduction steps.</p>
@@ -187,48 +199,46 @@
 
     <main class="max-w-4xl mx-auto p-4 md:p-8">
 
-        <div id="input-card" class="bg-gray-800 p-8 rounded-xl shadow-2xl mt-[-50px] relative z-20 transition duration-500 ease-in-out">
+        <div id="input-card" class="bg-gray-800 p-8 rounded-xl shadow-2xl mt-[-50px] Relative z-20Transition duration-500 ease-in-out">
             <h2 class="text-2xl font-bold text-white mb-4">Enter a Boolean Formula</h2>
             <p class="text-md text-gray-400 mb-6">
                 Input a SAT formula and watch it transform through 3-CNF to a Clique problem.
             </p>
             
             <div class="flex flex-col md:flex-row items-stretch md:items-center space-y-4 md:space-y-0 md:space-x-4 mb-4">
-                <input type="text" id="formula-input" class="w-full p-4 font-mono-code text-xl border border-gray-600 bg-gray-900 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition text-white" 
-                    placeholder="e.g., (A OR B) AND (NOT A OR C)" value="(A OR B) AND (NOT A OR C)">
+                <input type="text" id="formula-input" class="w-full p-4 font-mono-code text-xl-border border-gray-600 bg-gray-900 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500Transition text-white" 
+                    placeholder="e.g., (A OR B OR C) AND (NOT A OR D OR E)" value="(A OR B OR C) AND (NOT A OR D OR E)">
                 
-                <button id="visualize-btn" class="flex-shrink-0 bg-orange-500 text-white font-bold py-3 px-8 text-lg rounded-lg hover:bg-orange-600 transition duration-200 shadow-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
+                <button id="visualize-btn" class="flex-shrink-0 btn-primary text-white font-bold py-3 px-8 text-lg rounded-lg shadow-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
                     Visualize →
                 </button>
             </div>
 
-            <div class="bg-gray-900 p-4 rounded-lg border border-gray-700 mb-6">
+            <div class="bg-gray-900 p-4 rounded-lg-border border-gray-700 mb-6">
                 <p class="text-sm font-semibold text-indigo-400 mb-2">ⓘ Syntax Guide:</p>
                 <ul class="text-sm space-y-1 text-gray-300">
-                    <li>Use <code class="font-mono-code bg-gray-800 px-2 py-0.5 rounded-md">OR</code> for disjunction (can use <code class="font-mono-code bg-gray-800 px-2 py-0.5 rounded-md">|</code>).</li>
-                    <li>Use <code class="font-mono-code bg-gray-800 px-2 py-0.5 rounded-md">AND</code> for conjunction (can use <code class="font-mono-code bg-gray-800 px-2 py-0.5 rounded-md">&amp;</code>).</li>
-                    <li>Use <code class="font-mono-code bg-gray-800 px-2 py-0.5 rounded-md">NOT</code> for negation (can use <code class="font-mono-code bg-gray-800 px-2 py-0.5 rounded-md">~</code>).</li>
-                    <li>Variables are **case-sensitive** (A-Z, X1-Z9, etc.).</li>
+                    <li>Use <code class="font-mono-code bg-gray-800 px-2 py-0.5 rounded-md">AND</code> for conjunction between clauses.</li>
+                    <li>Use <code class="font-mono-code bg-gray-800 px-2 py-0.5 rounded-md">OR</code> for disjunction within clauses.</li>
+                    <li>Use <code class="font-mono-code bg-gray-800 px-2 py-0.5 rounded-md">NOT</code> for negation.</li>
+                    <li>Variables are **case-sensitive** (A-Z, X1-Z2, etc.).</li>
+                    <li>Example: <code class="font-mono-code bg-gray-800 px-2 py-0.5 rounded-md">(A OR B OR C) AND (NOT A OR D OR E)</code></li>
                 </ul>
             </div>
             
             <div class="mt-6">
                 <p class="text-sm font-semibold text-gray-300 mb-2">Try these examples:</p>
                 <div id="example-buttons" class="flex flex-wrap gap-3">
-                    <!-- REPLACED WITH THE THREE EXAMPLES FROM THE IMAGE -->
-                    
-                    <button data-formula="(A OR B) AND (NOT A OR C)" class="example-btn font-mono-code text-xs bg-indigo-900/50 text-indigo-300 px-3 py-1 rounded-full hover:bg-indigo-800/50 transition">
-                        (A OR B) AND (NOT A OR C)
+                    <button data-formula="(A OR B OR C) AND (NOT A OR D OR E) AND (B OR NOT D OR F)" class="example-btn font-mono-code text-xs bg-indigo-900/50 text-indigo-300 px-3 py-1 rounded-full hover:bg-indigo-800/50Transition">
+                        (A OR B OR C) AND (NOT A OR D OR E) AND (B OR NOT D OR F)
                     </button>
                     
-                    <button data-formula="(X OR Y OR Z) AND (NOT X OR W)" class="example-btn font-mono-code text-xs bg-indigo-900/50 text-indigo-300 px-3 py-1 rounded-full hover:bg-indigo-800/50 transition">
-                        (X OR Y OR Z) AND (NOT X OR W)
+                    <button data-formula="(X OR Y OR Z) AND (NOT X OR NOT Y OR W) AND (Z OR W OR V)" class="example-btn font-mono-code text-xs bg-indigo-900/50 text-indigo-300 px-3 py-1 rounded-full hover:bg-indigo-800/50Transition">
+                        (X OR Y OR Z) AND (NOT X OR NOT Y OR W) AND (Z OR W OR V)
                     </button>
                     
-                    <button data-formula="(P OR Q) AND (NOT P OR R) AND (NOT Q OR R)" class="example-btn font-mono-code text-xs bg-indigo-900/50 text-indigo-300 px-3 py-1 rounded-full hover:bg-indigo-800/50 transition">
-                        (P OR Q) AND (NOT P OR R) AND (NOT Q OR R)
+                    <button data-formula="(P OR Q OR R) AND (NOT P OR S OR T) AND (NOT Q OR NOT S OR U)" class="example-btn font-mono-code text-xs bg-indigo-900/50 text-indigo-300 px-3 py-1 rounded-full hover:bg-indigo-800/50Transition">
+                        (P OR Q OR R) AND (NOT P OR S OR T) AND (NOT Q OR NOT S OR U)
                     </button>
-
                 </div>
             </div>
         </div>
@@ -237,11 +247,11 @@
             <div class="flex justify-between items-center mb-6">
                 <h2 class="text-3xl font-extrabold text-white">Reduction Steps</h2>
                 <div class="flex space-x-2">
-                    <button id="play-animation-btn" class="flex items-center bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-blue-700 transition">
-                        <svg class="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path></svg>
-                        Play Animation
+                    <button id="back-step-btn" class="flex items-center btn-primary text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-indigo-700Transition">
+                        <svg class="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd"></path></svg>
+                        Back
                     </button>
-                    <button id="next-step-btn" class="flex items-center bg-gray-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-gray-600 transition">
+                    <button id="next-step-btn" class="flex items-center bg-gray-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-gray-600Transition">
                         Next Step
                         <svg class="w-5 h-5 ml-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10.293 15.707a1 1 0 010-1.414L14.586 10l-4.293-4.293a1 1 0 111.414-1.414l5 5a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0z" clip-rule="evenodd"></path><path fill-rule="evenodd" d="M4.293 15.707a1 1 0 010-1.414L8.586 10 4.293 5.707a1 1 0 011.414-1.414l5 5a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
                     </button>
@@ -261,8 +271,8 @@
                 </div>
                 <div class="step-line" style="width: 50%;"></div>
                 <div class="step-item" data-step="3">
-                    <div class="mt-2 text-sm">Clique</div>
                     <div class="step-circle">3</div>
+                    <div class="mt-2 text-sm">Clique</div>
                 </div>
             </div>
 
@@ -279,7 +289,7 @@
                         <span id="sat-output"></span>
                     </div>
                     
-                    <div class="p-4 bg-gray-900 border border-gray-700 rounded-lg">
+                    <div class="p-4 bg-gray-900-border border-gray-700 rounded-lg">
                         <h4 class="text-lg font-semibold text-white mb-2">What is SAT?</h4>
                         <p class="text-sm text-gray-400">
                             The Boolean Satisfiability Problem (SAT) asks whether there exists an assignment of truth values to variables that makes the entire formula true. SAT was the first problem proven to be NP-complete, making it a cornerstone of computational complexity theory.
@@ -287,7 +297,7 @@
                     </div>
                 </div>
 
-                <div id="panel-2" class="bg-gray-800 p-8 rounded-xl fade-out hidden transition duration-500">
+                <div id="panel-2" class="bg-gray-800 p-8 rounded-xl fade-out hiddenTransition duration-500">
                     <h3 class="text-xl font-bold text-indigo-400 mb-4 flex items-center">
                         <svg class="w-6 h-6 mr-2 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
                         3-CNF Conversion
@@ -295,9 +305,9 @@
                     <p id="3cnf-stats" class="text-md text-gray-400 mb-4">Converted to 3-CNF with exactly 3 literals per clause. Each clause is a disjunction (OR) of three literals.</p>
 
                     <div id="3cnf-output" class="code-display text-lg font-mono-code text-white mb-6 p-6 space-y-3">
-                        </div>
+                    </div>
                     
-                    <div class="p-4 bg-gray-900 border border-gray-700 rounded-lg">
+                    <div class="p-4 bg-gray-900-border border-gray-700 rounded-lg">
                         <h4 class="text-lg font-semibold text-white mb-2">What is 3-CNF?</h4>
                         <p class="text-sm text-gray-400">
                             3-Conjunctive Normal Form (3-CNF) is a standardized format where a formula is expressed as a conjunction (AND) of clauses, where each clause is a disjunction (OR) of **exactly three literals**. Any SAT formula can be converted to 3-CNF in polynomial time, proving 3-SAT is NP-complete.
@@ -305,7 +315,7 @@
                     </div>
                 </div>
 
-                <div id="panel-3" class="bg-gray-800 p-8 rounded-xl fade-out hidden transition duration-500">
+                <div id="panel-3" class="bg-gray-800 p-8 rounded-xl fade-out hiddenTransition duration-500">
                     <h3 class="text-xl font-bold text-indigo-400 mb-4 flex items-center">
                         <svg class="w-6 h-6 mr-2 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                         CLIQUE Graph
@@ -313,28 +323,27 @@
                     <p id="clique-stats" class="text-md text-gray-400 mb-4">Graph where nodes represent literals and edges connect compatible literals from different clauses. A clique of size k (number of clauses) indicates a satisfying assignment exists.</p>
 
                     <div id="clique-graph-container" class="relative w-full h-[550px] rounded-xl overflow-hidden shadow-inner border-2 border-gray-700 mb-4">
-                        <svg id="clique-graph" class="absolute inset-0 w-full h-full"></svg>
                     </div>
                     
-                    <div class="flex flex-col md:flex-row justify-between items-center bg-gray-900 p-4 rounded-lg border border-gray-700 mb-6">
+                    <div class="flex flex-col md:flex-row justify-between items-center bg-gray-900 p-4 rounded-lg-border border-gray-700 mb-6">
                         <p class="text-white font-semibold mb-2 md:mb-0">Find a Clique of size <span id="k-value" class="text-yellow-400 text-lg">k</span>:</p>
-                        <button id="find-clique-btn" class="flex items-center bg-green-600 text-white font-bold py-2 px-6 rounded-lg shadow-md hover:bg-green-700 transition disabled:bg-gray-600">
+                        <button id="find-clique-btn" class="flex items-center btn-success text-white font-bold py-2 px-6 rounded-lg shadow-md disabled:bg-gray-600">
                             Highlight Satisfying Clique
                         </button>
                     </div>
 
                     <div class="grid grid-cols-2 gap-4 mb-6">
-                        <div class="p-4 bg-gray-900 border border-gray-700 rounded-lg">
+                        <div class="p-4 bg-gray-900-border border-gray-700 rounded-lg">
                             <h4 class="text-lg font-semibold text-white mb-2">Nodes</h4>
                             <p class="text-sm text-gray-400">Each node represents a **literal** (e.g., A or ¬B) from a specific 3-CNF clause. Nodes are colored by their source clause.</p>
                         </div>
-                        <div class="p-4 bg-gray-900 border border-gray-700 rounded-lg">
+                        <div class="p-4 bg-gray-900-border border-gray-700 rounded-lg">
                             <h4 class="text-lg font-semibold text-white mb-2">Edges</h4>
                             <p class="text-sm text-gray-400">An edge exists if two literals belong to **different clauses** AND are **not contradictory** (e.g., X and ¬X).</p>
                         </div>
                     </div>
                     
-                    <div class="p-4 bg-gray-900 border border-gray-700 rounded-lg">
+                    <div class="p-4 bg-gray-900-border border-gray-700 rounded-lg">
                         <h4 class="text-lg font-semibold text-white mb-2">What is the Clique Problem?</h4>
                         <p class="text-sm text-gray-400">
                             The existence of a **Clique** (a complete subgraph) of size k (the number of 3-CNF clauses) proves the original SAT formula is satisfiable. This reduction shows that 3-SAT is polynomially reducible to CLIQUE, proving CLIQUE is also NP-complete.
@@ -352,461 +361,180 @@
 
     <script>
         // =================================================================
-        // GRAPH RENDERING LOGIC (ADVANCED FORCE-DIRECTED LAYOUT)
+        // CLIQUE GRAPH RENDERING USING CYTOSCAPE.JS
         // =================================================================
 
-        // --- Graph Constants ---
-        const NODE_SIZE = 40; 
-        const NODE_HALF_SIZE = NODE_SIZE / 2;
-        const PADDING = 20;
-        const REPULSION_FORCE = 8000;
-        const ATTRACTION_STRENGTH = 0.05;
-        const DAMPING_FACTOR = 0.6;
-        const MAX_VELOCITY = 10;
-        const MAX_ITERATIONS = 200; // Limit simulation time
+        let cy = null; // Cytoscape instance
 
-        // Tailwind CSS mapping for node styles (assuming dark theme context)
-        const NODE_STYLES = [
-            'sky-300', 'green-300', 'violet-300', 'pink-300', 'teal-300', 'yellow-300', 'red-300', 'blue-300'
-        ];
-
-        // --- Module State (Private) ---
-        let graphNodes = [];
-        let graphEdges = [];
-        let containerEl = null;
-        let svgEl = null;
-        let simulationTimer = null;
-        let isDragging = false;
-        let k_size = 0; // Target Clique size
-
-        // --- Internal Utilities ---
-
-        /**
-         * Simple color mapping utility.
-         */
-        function getTailwindColor(tailwindClass) {
-            const map = {
-                'sky-300': '#7dd3fc', 'green-300': '#86efac', 'violet-300': '#c4b5fd', 
-                'pink-300': '#f9a8d4', 'teal-300': '#5eead4', 'yellow-300': '#fcd34d', 
-                'red-300': '#fca5a5', 'blue-300': '#93c5fd'
-            };
-            return map[tailwindClass] || '#FFFFFF';
-        }
-        
-        // --- Physics Simulation Core ---
-
-        function tick(iteration) {
-            const width = containerEl.clientWidth;
-            const height = containerEl.clientHeight;
-            const center = { x: width / 2, y: height / 2 };
-
-            // Apply forces
-            graphNodes.forEach(source => {
-                // Initialize velocity if missing
-                if (source.vx === undefined) { 
-                    source.vx = (Math.random() - 0.5) * 2; 
-                    source.vy = (Math.random() - 0.5) * 2;
-                }
-
-                // 1. Repulsion (Node-Node)
-                graphNodes.forEach(target => {
-                    if (source !== target) {
-                        const dx = source.x - target.x;
-                        const dy = source.y - target.y;
-                        const dist2 = dx * dx + dy * dy;
-                        const dist = Math.sqrt(dist2);
-
-                        if (dist > 0) {
-                            const force = REPULSION_FORCE / dist2;
-                            source.vx += force * dx / dist;
-                            source.vy += force * dy / dist;
+        function createCliqueGraph(clauses) {
+            const graphData = buildCliqueGraph(clauses);
+            
+            if (cy) {
+                cy.destroy();
+            }
+            
+            cy = cytoscape({
+                container: document.getElementById('clique-graph-container'),
+                elements: [
+                    ...graphData.nodes.map(node => ({ 
+                        data: { 
+                            id: node.id, 
+                            label: node.label, 
+                            clause: node.clause 
+                        } 
+                    })),
+                    ...graphData.edges.map(edge => ({ 
+                        data: { 
+                            source: edge.source, 
+                            target: edge.target 
+                        } 
+                    }))
+                ],
+                style: [
+                    {
+                        selector: 'node',
+                        style: {
+                            'background-color': function(ele) {
+                                const colors = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
+                                return colors[(ele.data('clause') - 1) % colors.length];
+                            },
+                            'label': 'data(label)',
+                            'color': '#fff',
+                            'text-valign': 'center',
+                            'text-halign': 'center',
+                            'font-weight': 'bold',
+                            'font-size': '14px',
+                            'width': 50,
+                            'height': 50,
+                            'border-width': 2,
+                            'border-color': '#fff',
+                            'overlay-opacity': 0,
+                            'transition-property': 'background-color, border-width, width, height',
+                            'transition-duration': '0.3s'
+                        }
+                    },
+                    {
+                        selector: 'edge',
+                        style: {
+                            'width': 2,
+                            'line-color': '#4b5563',
+                            'opacity': 0.6,
+                            'transition-property': 'line-color, width, opacity',
+                            'transition-duration': '0.3s'
+                        }
+                    },
+                    {
+                        selector: '.highlighted',
+                        style: {
+                            'background-color': '#22c55e',
+                            'border-width': 4,
+                            'width': 60,
+                            'height': 60,
+                            'z-index': 999
+                        }
+                    },
+                    {
+                        selector: '.highlighted-edge',
+                        style: {
+                            'line-color': '#22c55e',
+                            'width': 4,
+                            'opacity': 1
+                        }
+                    },
+                    {
+                        selector: '.selected',
+                        style: {
+                            'background-color': '#22c55e',
+                            'border-width': 4,
+                            'border-color': '#16a34a',
+                            'width': 60,
+                            'height': 60,
+                            'z-index': 998
+                        }
+                    },
+                    {
+                        selector: '.selected-edge',
+                        style: {
+                            'line-color': '#22c55e',
+                            'width': 3,
+                            'opacity': 0.8
                         }
                     }
-                });
-
-                // 2. Gravity/Centering (Attraction to Center)
-                const centerForce = 0.005; 
-                source.vx -= centerForce * (source.x - center.x);
-                source.vy -= centerForce * (source.y - center.y);
-
-                // 3. Edges (Attraction/Spring) - Only for connected nodes in *different* clauses
-                graphEdges.forEach(edge => {
-                    let other = (edge.source === source) ? edge.target : (edge.target === source) ? edge.source : null;
-                    if (other) {
-                         const dx = other.x - source.x;
-                         const dy = other.y - source.y;
-                         const dist = Math.sqrt(dx * dx + dy * dy);
-                         const desiredLength = width / (k_size * 2 + 3); // Dynamic link length
-
-                         const force = ATTRACTION_STRENGTH * (dist - desiredLength);
-
-                         source.vx += force * dx / dist;
-                         source.vy += force * dy / dist;
-                    }
-                });
-            });
-
-            // Update positions and apply damping
-            graphNodes.forEach(node => {
-                if (node.fx === undefined) { // Check if not fixed (i.e., not being dragged)
-                    // Apply damping
-                    node.vx *= DAMPING_FACTOR;
-                    node.vy *= DAMPING_FACTOR;
-
-                    // Clamp velocity
-                    const speed = Math.sqrt(node.vx * node.vx + node.vy * node.vy);
-                    if (speed > MAX_VELOCITY) {
-                        node.vx = (node.vx / speed) * MAX_VELOCITY;
-                        node.vy = (node.vy / speed) * MAX_VELOCITY;
-                    }
-
-                    node.x += node.vx;
-                    node.y += node.vy;
-
-                    // Boundary checks (clamp position)
-                    node.x = Math.max(NODE_HALF_SIZE + PADDING, Math.min(width - NODE_HALF_SIZE - PADDING, node.x));
-                    node.y = Math.max(NODE_HALF_SIZE + PADDING, Math.min(height - NODE_HALF_SIZE - PADDING, node.y));
+                ],
+                layout: { 
+                    name: 'cose', 
+                    padding: 50,
+                    randomize: true,
+                    animate: true,
+                    animationDuration: 1000,
+                    idealEdgeLength: 100,
+                    nodeOverlap: 20,
+                    refresh: 20,
+                    fit: true
                 }
             });
 
-            // Re-render
-            applyTransform();
-
-            // Stop condition
-            if (iteration < MAX_ITERATIONS) {
-                simulationTimer = requestAnimationFrame(() => tick(iteration + 1));
-            } else {
-                 // Final gentle nudge and stop
-                 graphNodes.forEach(n => { n.vx = n.vy = 0; });
-            }
-        }
-
-        function startSimulation() {
-            stopSimulation(); // Ensure previous simulation is stopped
-            if (graphNodes.length > 0) {
-                // Initialize positions randomly at the start
-                const width = containerEl.clientWidth;
-                const height = containerEl.clientHeight;
-                graphNodes.forEach(node => {
-                    // Initial random position in the center area
-                    node.x = width / 2 + (Math.random() - 0.5) * 50;
-                    node.y = height / 2 + (Math.random() - 0.5) * 50;
-                    // Reset velocity/fix
-                    node.vx = node.vy = 0;
-                    node.fx = node.fy = undefined;
-                });
-                tick(0); // Start the simulation loop
-            }
-        }
-
-        function stopSimulation() {
-            if (simulationTimer) {
-                cancelAnimationFrame(simulationTimer);
-                simulationTimer = null;
-            }
-        }
-
-        /**
-         * Renders nodes and edges to the DOM/SVG based on their stored (x, y) coordinates.
-         */
-        function renderElements() {
-            if (svgEl) svgEl.innerHTML = '';
-            
-            const edgeFragment = document.createDocumentFragment();
-            const nodeFragment = document.createDocumentFragment(); 
-            const NS = 'http://www.w3.org/2000/svg';
-
-            // 1. Render Edges (SVG Lines)
-            graphEdges.forEach(edge => {
-                const line = document.createElementNS(NS, 'line');
-                // MODIFIED: Ensure solid white stroke for clear visibility
-                line.setAttribute('class', 'graph-edge opacity-100'); 
-                line.setAttribute('stroke', 'white');
-                line.setAttribute('stroke-width', '2');
-                edgeFragment.appendChild(line);
-                edge.el = line;
-            });
-            if (svgEl) svgEl.appendChild(edgeFragment);
-
-            // 2. Render Nodes (SVG Groups with Circle and Text)
-            graphNodes.forEach(node => {
-                const group = document.createElementNS(NS, 'g');
-                group.setAttribute('class', 'graph-node-group');
-                group.id = `node-group-${node.id}`;
-                group.setAttribute('transform', `translate(${node.x}, ${node.y})`);
+            // Node click interaction with toggle
+            cy.on('tap', 'node', function(evt) {
+                const node = evt.target;
                 
-                const circle = document.createElementNS(NS, 'circle');
-                const styleClass = NODE_STYLES[node.clauseIndex % NODE_STYLES.length];
-                const color = getTailwindColor(styleClass);
-                
-                circle.setAttribute('r', NODE_HALF_SIZE);
-                circle.setAttribute('cx', 0);
-                circle.setAttribute('cy', 0);
-                circle.setAttribute('fill', 'var(--bg-card)'); 
-                circle.setAttribute('class', `graph-node-circle border-2 hover:shadow-lg`);
-                circle.style.cssText = `fill: var(--bg-card); stroke: ${color};`;
-                
-                const text = document.createElementNS(NS, 'text');
-                text.setAttribute('class', 'graph-node-label');
-                text.setAttribute('font-size', '14px');
-                text.textContent = node.literal.replace('~', '¬');
-
-                group.appendChild(circle);
-                group.appendChild(text);
-                nodeFragment.appendChild(group);
-
-                node.el = { group, circle, text }; 
-
-                // Attach handlers (Drag, Tooltip)
-                addDragHandlers(group, node);
-                addTooltipHandlers(group, node);
-            });
-            if (svgEl) svgEl.appendChild(nodeFragment);
-
-            // Apply final positions
-            applyTransform();
-            
-            // Start the physics simulation
-            startSimulation();
-        }
-
-
-        /**
-         * Updates the SVG element positions based on calculated coordinates.
-         */
-        function applyTransform() {
-            graphNodes.forEach(node => {
-                if (node.el && node.el.group) {
-                    node.el.group.setAttribute('transform', `translate(${node.x}, ${node.y})`);
+                // Check if node is already selected
+                if (node.hasClass('selected')) {
+                    // Remove selection
+                    node.removeClass('selected');
+                    node.connectedEdges().removeClass('selected-edge');
+                    node.connectedEdges().connectedNodes().removeClass('selected');
+                } else {
+                    // Add selection
+                    node.addClass('selected');
+                    node.connectedEdges().addClass('selected-edge');
+                    node.connectedEdges().connectedNodes().addClass('selected');
                 }
             });
 
-            graphEdges.forEach(edge => {
-                if (edge.el) {
-                    edge.el.setAttribute('x1', edge.source.x);
-                    edge.el.setAttribute('y1', edge.source.y);
-                    edge.el.setAttribute('x2', edge.target.x);
-                    edge.el.setAttribute('y2', edge.target.y);
-                }
-            });
+            return cy;
         }
 
-
-        // --- Interactivity Handlers (Drag) ---
-
-        function addDragHandlers(group, node) {
-            let active = false;
-            let containerRect;
-            let startX, startY;
+        function highlightClique() {
+            if (!cy) return;
             
-            function dragStart(e) {
-                e.preventDefault(); 
-                stopSimulation(); // Stop simulation on drag start
-
-                const clientX = e.type.startsWith("touch") ? e.touches[0].clientX : e.clientX;
-                const clientY = e.type.startsWith("touch") ? e.touches[0].clientY : e.clientY;
-
-                containerRect = containerEl.getBoundingClientRect();
-
-                // Fix the node position for dragging
-                node.fx = node.x;
-                node.fy = node.y;
-
-                startX = clientX - containerRect.left - node.x;
-                startY = clientY - containerRect.top - node.y;
-
-                active = true;
-                isDragging = true;
-                group.style.cursor = 'grabbing';
-                node.el.circle.setAttribute('stroke-width', 4);
-            }
-
-            function dragEnd() {
-                if (!active) return;
-                active = false;
-                isDragging = false;
-                group.style.cursor = 'grab';
-                node.el.circle.setAttribute('stroke-width', 2);
-                
-                // Unfix the node and restart the simulation
-                node.fx = node.fy = undefined;
-                startSimulation();
-            }
-
-            function drag(e) {
-                if (!active) return;
-                e.preventDefault();
-
-                const clientX = e.type.startsWith("touch") ? e.touches[0].clientX : e.clientX;
-                const clientY = e.type.startsWith("touch") ? e.touches[0].clientY : e.clientY;
-                const width = containerEl.clientWidth;
-                const height = containerEl.clientHeight;
-
-                let newX = clientX - containerRect.left - startX;
-                let newY = clientY - containerRect.top - startY;
-
-                // Clamp position within boundaries
-                node.x = Math.max(NODE_HALF_SIZE + PADDING, Math.min(width - NODE_HALF_SIZE - PADDING, newX));
-                node.y = Math.max(NODE_HALF_SIZE + PADDING, Math.min(height - NODE_HALF_SIZE - PADDING, newY));
-                
-                // Update fixed position and transform instantly
-                node.fx = node.x;
-                node.fy = node.y;
-                applyTransform();
-            }
-
-            group.addEventListener("mousedown", dragStart);
-            document.addEventListener("mouseup", dragEnd);
-            document.addEventListener("mousemove", drag);
-
-            group.addEventListener("touchstart", dragStart, {passive: false});
-            document.addEventListener("touchend", dragEnd);
-            document.addEventListener("touchmove", drag, {passive: false});
-
-            group.style.cursor = 'grab';
-        }
-
-        function addTooltipHandlers(group, node) {
-            if (!group) return;
-
-            group.addEventListener('mouseenter', (e) => {
-                if(isDragging) return;
-                // Dispatch custom event for index.html to handle tooltips
-                containerEl.dispatchEvent(new CustomEvent('graph-tooltip', {
-                    detail: {
-                        text: `Literal: ${node.literal.replace('~', '¬')} | Clause: C${node.clauseIndex + 1}`,
-                        x: e.clientX,
-                        y: e.clientY,
-                        show: true
-                    }
-                }));
-                node.el.circle.setAttribute('stroke-width', 4);
-            });
-
-            group.addEventListener('mouseleave', () => {
-                containerEl.dispatchEvent(new CustomEvent('graph-tooltip', { detail: { show: false } }));
-                node.el.circle.setAttribute('stroke-width', 2);
-            });
-        }
-        
-        /**
-         * Public API to create the graph instance.
-         */
-        function createInteractiveCliqueGraph(containerIdParam, svgId) {
-            containerEl = document.getElementById(containerIdParam);
-            svgEl = document.getElementById(svgId);
-
-            if (!containerEl || !svgEl) {
-                console.error("Graph initialization failed: Container or SVG element not found.");
-                return { updateGraph: () => {}, resetView: () => {}, animateSequence: () => {}, highlightClique: () => {} };
+            // Clear both clique highlights and individual selections
+            cy.elements().removeClass('highlighted highlighted-edge selected selected-edge');
+            
+            // Select one node from each clause
+            const clique = [];
+            const numClauses = Math.max(...cy.nodes().map(n => n.data('clause')));
+            
+            for (let clause = 1; clause <= numClauses; clause++) {
+                const nodesInClause = cy.nodes().filter(node => node.data('clause') === clause);
+                if (nodesInClause.length > 0) {
+                    clique.push(nodesInClause[0]);
+                }
             }
             
-            return {
-                /** Updates graph data, computes static layout, and renders. */
-                updateGraph: (nodes, edges, k) => {
-                    stopSimulation();
-                    graphNodes = nodes.map(n => ({ ...n, el: null, x: 0, y: 0, vx: 0, vy: 0 })); 
-                    graphEdges = edges.map(e => ({ source: nodes.find(n => n.id === e.source.id), target: nodes.find(n => n.id === e.target.id), el: null }));
-                    k_size = k;
-
-                    if (graphNodes.length > 0) {
-                        renderElements(); // Render to DOM and starts simulation
-                    } else {
-                         svgEl.innerHTML = '';
-                    }
-                },
-                /** Simple sequence animation (required for Play button API). */
-                animateSequence: ({ nodeDelay = 100 }) => {
-                    return new Promise(resolve => {
-                        let delay = 0;
-                        
-                        graphNodes.forEach((node, index) => {
-                            setTimeout(() => {
-                                if (node.el) node.el.group.style.opacity = 1;
-                            }, delay + index * nodeDelay);
-                        });
-
-                        setTimeout(resolve, delay + graphNodes.length * nodeDelay + 500);
-                    });
-                },
-                
-                /** Advanced: Highlights a potential satisfying clique (Greedy Approximation). */
-                highlightClique: () => {
-                    // 1. Reset all highlights
-                    graphNodes.forEach(n => n.el.circle.classList.remove('clique-node-highlight'));
-                    graphEdges.forEach(e => e.el.classList.remove('clique-edge-highlight'));
-                    
-                    if (k_size === 0) return { found: false, clique: [] };
-                    
-                    // Simple search for a valid set (not true NP-Complete solving, just for demo)
-                    let foundCliqueNodes = [];
-                    let possibleAssignment = {}; // { variable: true/false }
-                    let success = true;
-
-                    // Greedily pick the first literal from each clause that doesn't contradict a previous assignment
-                    for (let i = 0; i < k_size; i++) {
-                        const clauseNodes = graphNodes.filter(n => n.clauseIndex === i);
-                        let selectedNode = null;
-                        
-                        // Try to find a non-contradictory literal from this clause
-                        for (let node of clauseNodes) {
-                            const lit = node.literal;
-                            const varName = lit.replace('~', '');
-                            const isNegated = lit.startsWith('~');
-                            
-                            // Check for contradiction with existing assignment
-                            if (possibleAssignment[varName] !== undefined && possibleAssignment[varName] !== !isNegated) {
-                                // Contradiction: skip this literal
-                                continue;
-                            }
-                            
-                            // No contradiction or variable not yet assigned: select this one
-                            selectedNode = node;
-                            possibleAssignment[varName] = !isNegated; // Set the variable's truth value
-                            break; 
-                        }
-
-                        if (selectedNode) {
-                            foundCliqueNodes.push(selectedNode);
-                        } else {
-                            // If no literal in a clause can be picked without contradiction, a clique of size k might not exist
-                            success = false;
-                            break; 
-                        }
-                    }
-
-                    if (foundCliqueNodes.length === k_size && success) {
-                        // 2. Highlight Nodes
-                        foundCliqueNodes.forEach(node => {
-                            node.el.circle.classList.add('clique-node-highlight');
-                        });
-
-                        // 3. Highlight Edges within the clique
-                        graphEdges.forEach(edge => {
-                            if (foundCliqueNodes.includes(edge.source) && foundCliqueNodes.includes(edge.target)) {
-                                edge.el.classList.add('clique-edge-highlight');
-                                edge.el.style.opacity = 1; // Ensure full visibility
-                            }
-                        });
-                        return { found: true, clique: foundCliqueNodes, assignment: possibleAssignment };
-                    }
-                    
-                    // If no simple clique found (or formula is unsatisfiable)
-                    document.getElementById('clique-stats').textContent = 'Could not find a satisfying clique of size k. The formula may be unsatisfiable.';
-                    return { found: false, clique: [] };
+            // Highlight clique nodes
+            clique.forEach(node => node.addClass('highlighted'));
+            
+            // Highlight edges between clique nodes
+            for (let i = 0; i < clique.length; i++) {
+                for (let j = i + 1; j < clique.length; j++) {
+                    const edge = cy.edges(`[source = "${clique[i].id()}"][target = "${clique[j].id()}"], [source = "${clique[j].id()}"][target = "${clique[i].id()}"]`);
+                    edge.addClass('highlighted-edge');
                 }
-            };
+            }
+            
+            return clique;
         }
-        
+
         // =================================================================
-        // MAIN APPLICATION LOGIC (index.html flow)
+        // MAIN APPLICATION LOGIC
         // =================================================================
 
         // --- UI Elements ---
         const formulaInput = document.getElementById('formula-input');
         const visualizeBtn = document.getElementById('visualize-btn');
         const nextStepBtn = document.getElementById('next-step-btn');
-        const playAnimationBtn = document.getElementById('play-animation-btn');
+        const backStepBtn = document.getElementById('back-step-btn');
         const findCliqueBtn = document.getElementById('find-clique-btn');
         const exampleButtons = document.querySelectorAll('.example-btn');
         
@@ -821,26 +549,18 @@
 
         // --- Data & State ---
         let currentStep = 0; // 0: Input, 1: SAT, 2: 3-CNF, 3: CLIQUE
+        let isCliqueHighlighted = false; // Track highlight state
         let transformationData = {
+            originalFormula: '',
             clauses: [],
-            k: 0,
-            dummyCount: 0
+            k: 0
         };
-        let cliqueGraph = null; // Graph instance holder
-        
-        // --- Initialize Graph Instance ---
-        // NOTE: script is at the end of body, so DOM is already available. Initialize immediately.
-        cliqueGraph = createInteractiveCliqueGraph('clique-graph-container', 'clique-graph');
-        updateButtonState(0);
-        // Set initial state for 3-CNF panel text (since initFlow isn't called yet)
-        if (formulaInput) document.getElementById('sat-output').textContent = formulaInput.value;
-
 
         // --- UTILITY FUNCTIONS (Parsing & Reduction) ---
         
         function cleanFormula(input) {
             let cleaned = input.toUpperCase();
-            cleaned = cleaned.replace(/OR/g, '|').replace(/AND/g, '&').replace(/NOT/g, '~').replace(/\s+/g, '').trim();
+            cleaned = cleaned.replace(/\s+/g, '').trim();
             return cleaned;
         }
 
@@ -849,79 +569,54 @@
                 const cleanedInput = cleanFormula(input);
                 if (!cleanedInput) return [];
                 
-                const clauses = cleanedInput.split('&')
+                const clauses = cleanedInput.split('AND')
                     .map(c => c.replace(/[()]/g, '')) 
                     .filter(c => c.length > 0)
-                    .map(c => c.split('|').map(l => l.trim()).filter(l => l.length > 0)); 
+                    .map(c => c.split('OR').map(l => l.trim()).filter(l => l.length > 0)); 
                 
                 return clauses;
             } catch (e) { return null; }
         }
         
-        function areContradictory(lit1, lit2) {
-            const l1 = lit1.replace('~', '');
-            const l2 = lit2.replace('~', '');
-            const neg1 = lit1.startsWith('~');
-            const neg2 = lit2.startsWith('~');
+        function areContradictory(literal1, literal2) {
+            const l1 = literal1.replace('NOT', '');
+            const l2 = literal2.replace('NOT', '');
+            const neg1 = literal1.startsWith('NOT');
+            const neg2 = literal2.startsWith('NOT');
             return l1 === l2 && neg1 !== neg2;
         }
 
-        // NOTE: Standard textbook reduction logic (simplified for demonstration)
-        function transformTo3CNF(originalClauses) {
-            let newClauses = [];
-            let dummyVarIndex = 1;
+        function convertTo3CNF(formula) {
+            const clauses = parseFormula(formula);
+            if (!clauses) return [];
             
-            originalClauses.forEach(clause => {
-                let len = clause.length;
+            const result = [];
+            
+            clauses.forEach(clause => {
+                let processedClause = clause;
                 
-                if (len === 1) { 
-                    let c = clause[0];
-                    let z1 = `Z${dummyVarIndex++}`;
-                    let z2 = `Z${dummyVarIndex++}`;
-                    newClauses.push([c, z1, z2]);
-                    newClauses.push([c, z1, `~${z2}`]);
-                    newClauses.push([c, `~${z1}`, z2]);
-                    newClauses.push([c, `~${z1}`, `~${z2}`]);
-                } else if (len === 2) { 
-                    let [c1, c2] = clause;
-                    let z1 = `Z${dummyVarIndex++}`;
-                    newClauses.push([c1, c2, z1]);
-                    newClauses.push([c1, c2, `~${z1}`]);
-                } else if (len === 3) {
-                    newClauses.push(clause);
-                } else if (len > 3) { 
-                    let z_in = null;
-                    for (let i = 0; i < len; i++) {
-                        const l = clause[i];
-                        if (i === 0) {
-                            const z_out = `Z${dummyVarIndex++}`;
-                            newClauses.push([l, clause[i+1], z_out]);
-                            z_in = z_out;
-                            i++; // Skip the next literal
-                        } else if (i < len - 2) {
-                            const z_out = `Z${dummyVarIndex++}`;
-                            newClauses.push([`~${z_in}`, l, z_out]);
-                            z_in = z_out;
-                        } else if (i === len - 2) {
-                            newClauses.push([`~${z_in}`, l, clause[i+1]]);
-                            i++; // Skip last literal
-                        }
-                    }
+                // If fewer than 3 literals, duplicate the last literal
+                while (processedClause.length < 3) {
+                    processedClause.push(processedClause[processedClause.length - 1]);
                 }
+                
+                // Take first 3 literals
+                result.push(processedClause.slice(0, 3));
             });
             
-            return { newClauses, dummyVarIndex: dummyVarIndex - 1 };
+            return result;
         }
 
-        function generateGraphData(clauses) {
+        function buildCliqueGraph(clauses) {
             let nodes = [];
             let edges = [];
 
             clauses.forEach((clause, i) => {
                 clause.forEach(lit => {
-                    // Node ID is crucial for connecting edges later
-                    const nodeId = `${lit}_C${i}`;
-                    const node = { id: nodeId, literal: lit, clauseIndex: i };
+                    // Node ID: ${literal}_${clauseIndex+1}
+                    const nodeId = `${lit}_${i + 1}`;
+                    const label = lit.replace('NOT', '¬');
+                    const node = { id: nodeId, label: label, clause: i + 1 };
                     nodes.push(node);
                 });
             });
@@ -933,24 +628,35 @@
                     const n2 = nodes[j];
                     
                     // Rule 1: Different clauses
-                    const isDifferentClause = n1.clauseIndex !== n2.clauseIndex;
+                    const isDifferentClause = n1.clause !== n2.clause;
                     
                     // Rule 2: Not contradictory
-                    const isCompatible = !areContradictory(n1.literal, n2.literal);
+                    const isCompatible = !areContradictory(n1.label.replace('¬', 'NOT'), n2.label.replace('¬', 'NOT'));
                     
                     if (isDifferentClause && isCompatible) {
-                        edges.push({ source: n1, target: n2 });
+                        edges.push({ source: n1.id, target: n2.id });
                     }
                 }
             }
             return { nodes, edges, k: clauses.length };
         }
 
+        function processFormula(formula) {
+            const clauses = convertTo3CNF(formula);
+            const graphData = buildCliqueGraph(clauses);
+            
+            return {
+                sat: { formula, explanation: "Original SAT formula in Boolean form" },
+                cnf: { clauses, explanation: "Converted to 3-CNF with exactly 3 literals per clause" },
+                clique: { nodes: graphData.nodes, edges: graphData.edges, k: graphData.k, explanation: "Graph representation for CLIQUE problem" }
+            };
+        }
+
         // --- UI Control Functions ---
         
         function updateButtonState(step) {
             nextStepBtn.disabled = step >= 3;
-            playAnimationBtn.disabled = step >= 3;
+            backStepBtn.disabled = step <= 1;
             findCliqueBtn.disabled = step < 3;
         }
 
@@ -963,13 +669,7 @@
 
             if (step === 1) stepLineFill.style.width = '0%';
             else if (step === 2) stepLineFill.style.width = '50%';
-            else if (step === 3) {
-                 stepLineFill.style.width = '100%';
-                 stopSimulation(); // Ensure simulation is running only when on step 3
-                 if(cliqueGraph) startSimulation();
-            } else {
-                 stopSimulation();
-            }
+            else if (step === 3) stepLineFill.style.width = '100%';
 
             // Update Panels Visibility
             stepPanels.forEach((panel, index) => {
@@ -999,14 +699,14 @@
             document.getElementById('sat-output').textContent = formula;
         }
 
-        function render3CNF(clauses, originalCount, dummyCount) {
-            document.getElementById('3cnf-stats').innerHTML = `The original formula (${originalCount} clause${originalCount !== 1 ? 's' : ''}) resulted in **${clauses.length}** 3-CNF clauses, using **${dummyCount}** new z variables.`;
+        function render3CNF(clauses, originalCount) {
+            document.getElementById('3cnf-stats').innerHTML = `The original formula resulted in **${clauses.length}** 3-CNF clauses, each containing exactly 3 literals.`;
             
             const outputEl = document.getElementById('3cnf-output');
             outputEl.innerHTML = clauses.map((clause, index) => `
-                <div class="flex flex-wrap items-center">
-                    <span class="text-gray-400 font-bold mr-2">C${index + 1}:</span>
-                    <span class="text-white">(${clause.map(l => l.replace('~', '¬')).join(' ∨ ')})</span>
+                <div class="clause-card">
+                    <span class="clause-number">C${index + 1}:</span>
+                    <span>[${clause.map(l => l.replace('NOT', '¬')).join(', ')}]</span>
                 </div>
             `).join('<span class="text-indigo-400 font-bold mx-2">∧</span>');
         }
@@ -1015,46 +715,39 @@
             document.getElementById('k-value').textContent = data.k;
             document.getElementById('clique-stats').innerHTML = `Graph where nodes represent literals and edges connect compatible literals from different clauses. A clique of size **k** (${data.k}) indicates a satisfying assignment exists.`;
             
-            // Prepare graph data
-            const graphData = generateGraphData(data.clauses);
-
-            // Call the imported graph function
-            if (cliqueGraph && cliqueGraph.updateGraph) {
-                cliqueGraph.updateGraph(graphData.nodes, graphData.edges, graphData.k);
-            }
+            // Create the graph using Cytoscape.js
+            createCliqueGraph(data.clauses);
         }
 
         // --- Main Flow Control ---
 
-        async function initFlow() {
+        function initFlow() {
             currentStep = 0;
+            isCliqueHighlighted = false; // Reset highlight state
             
             const inputFormula = formulaInput.value;
             if (!inputFormula) return;
 
             const originalClauses = parseFormula(inputFormula);
             if (!originalClauses || originalClauses.some(c => c.length === 0)) {
-                // Use a custom modal instead of alert
                 console.error("Invalid formula format. Please check your input and operators.");
-                // Note: since this environment doesn't support custom modals, we rely on console error, but typically here we'd show a UI message.
                 return;
             }
 
             reductionContainer.classList.remove('hidden', 'fade-out');
             reductionContainer.classList.add('fade-in');
 
-            const reduction = transformTo3CNF(originalClauses);
-            const k_value = reduction.newClauses.length;
-
+            const processedData = processFormula(inputFormula);
+            
             transformationData = {
-                clauses: reduction.newClauses,
-                k: k_value,
-                dummyCount: reduction.dummyVarIndex
+                originalFormula: inputFormula,
+                clauses: processedData.cnf.clauses,
+                k: processedData.clique.k
             };
             
             // Render all content (Step 1, 2, and initial Step 3 setup)
-            renderSAT(inputFormula);
-            render3CNF(transformationData.clauses, originalClauses.length, transformationData.dummyCount);
+            renderSAT(processedData.sat.formula);
+            render3CNF(processedData.cnf.clauses, originalClauses.length);
             renderClique(transformationData); 
 
             currentStep = 1;
@@ -1066,48 +759,88 @@
                 currentStep++;
                 updateStepUI(currentStep);
                 
-                if (currentStep === 3 && cliqueGraph && cliqueGraph.animateSequence) {
-                    cliqueGraph.animateSequence({ nodeDelay: 100, edgeDelay: 50 });
+                // Reset highlight when entering step 3
+                if (currentStep === 3) {
+                    isCliqueHighlighted = false;
+                    const btn = document.getElementById('find-clique-btn');
+                    if (btn) btn.textContent = 'Highlight Satisfying Clique';
+                    
+                    if (cy) {
+                        // Animate graph layout
+                        cy.layout({
+                            name: 'cose',
+                            animate: true,
+                            animationDuration: 1000,
+                            fit: true
+                        }).run();
+                    }
                 }
             }
         }
 
-        async function playAnimation() {
-            if (currentStep === 3) return; 
-
-            updateButtonState(4); // Temporarily disable buttons during animation
-            stopSimulation();
-
-            for (let i = currentStep + 1; i <= 3; i++) {
-                currentStep = i;
-                updateStepUI(currentStep);
-                
-                if (currentStep === 3 && cliqueGraph && cliqueGraph.animateSequence) {
-                    // Animate node fade-in and edges later
-                    await cliqueGraph.animateSequence({ nodeDelay: 100, edgeDelay: 50 });
-                } else {
-                    await new Promise(resolve => setTimeout(resolve, 1500)); 
+        function goBackStep() {
+            if (currentStep > 1) {
+                // Reset highlight when leaving step 3
+                if (currentStep === 3) {
+                    if (isCliqueHighlighted) {
+                        isCliqueHighlighted = false;
+                    }
+                    if (cy) {
+                        cy.elements().removeClass('highlighted highlighted-edge selected selected-edge');
+                    }
                 }
+                
+                currentStep--;
+                updateStepUI(currentStep);
             }
-             updateButtonState(currentStep); // Re-enable buttons after animation
-             // Re-start simulation if on step 3
-             if(currentStep === 3 && cliqueGraph) startSimulation();
         }
 
         function handleCliqueFind() {
-            const result = cliqueGraph.highlightClique();
-            if (result.found) {
-                let assignmentText = Object.entries(result.assignment)
-                    .map(([v, t]) => `${v}=${t ? 'T' : 'F'}`).join(', ');
-                    
-                document.getElementById('clique-stats').innerHTML = `
-                    <span class="text-green-400 font-bold">A satisfying clique of size ${result.clique.length} was found!</span> 
-                    This corresponds to the assignment: <code class="font-mono-code bg-gray-700 px-2 py-1 rounded-md text-white">${assignmentText}</code>.
-                `;
+            const btn = document.getElementById('find-clique-btn');
+            
+            if (isCliqueHighlighted) {
+                // Remove highlighting
+                if (cy) {
+                    cy.elements().removeClass('highlighted highlighted-edge');
+                }
+                isCliqueHighlighted = false;
+                btn.textContent = 'Highlight Satisfying Clique';
+                
+                // Reset stats text
+                document.getElementById('clique-stats').innerHTML = `Graph where nodes represent literals and edges connect compatible literals from different clauses. A clique of size <strong>k</strong> (${transformationData.k}) indicates a satisfying assignment exists.`;
             } else {
-                 document.getElementById('clique-stats').innerHTML = `
-                    <span class="text-red-400 font-bold">Could not find a simple satisfying clique.</span> The formula is likely unsatisfiable or requires a more complex search.
-                `;
+                // Clear any individual node selections before highlighting clique
+                if (cy) {
+                    cy.elements().removeClass('selected selected-edge');
+                }
+                
+                // Add highlighting
+                const clique = highlightClique();
+                if (clique && clique.length > 0) {
+                    isCliqueHighlighted = true;
+                    btn.textContent = 'Clear Highlight';
+                    
+                    // Extract assignment from clique
+                    const assignment = {};
+                    clique.forEach(node => {
+                        const label = node.data('label');
+                        const variable = label.replace('¬', '');
+                        const isNegated = label.startsWith('¬');
+                        assignment[variable] = !isNegated;
+                    });
+                    
+                    let assignmentText = Object.entries(assignment)
+                        .map(([v, t]) => `${v}=${t ? 'T' : 'F'}`).join(', ');
+                        
+                    document.getElementById('clique-stats').innerHTML = `
+                        <span class="text-cyan-400 font-bold">A satisfying clique of size ${clique.length} was found!</span> 
+                        This corresponds to the assignment: <code class="font-mono-code bg-gray-700 px-2 py-1 rounded-md text-white">${assignmentText}</code>.
+                    `;
+                } else {
+                     document.getElementById('clique-stats').innerHTML = `
+                        <span class="text-red-400 font-bold">Could not find a simple satisfying clique.</span> The formula is likely unsatisfiable or requires a more complex search.
+                    `;
+                }
             }
         }
 
@@ -1115,7 +848,7 @@
 
         visualizeBtn.addEventListener('click', initFlow);
         nextStepBtn.addEventListener('click', advanceStep);
-        playAnimationBtn.addEventListener('click', playAnimation);
+        backStepBtn.addEventListener('click', goBackStep);
         findCliqueBtn.addEventListener('click', handleCliqueFind);
         
         exampleButtons.forEach(button => {
@@ -1128,35 +861,6 @@
         document.getElementById('dark-mode-toggle').addEventListener('click', () => {
             document.documentElement.classList.toggle('dark');
         });
-        
-        // Simple Tooltip for the graph (needs to be outside the graph module for body-relative positioning)
-        const tooltip = document.createElement('div');
-        tooltip.style.cssText = `
-            position: fixed;
-            background: #1F2937;
-            color: #E5E7EB;
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-size: 14px;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.2s;
-            z-index: 50;
-        `;
-        document.body.appendChild(tooltip);
-
-        document.getElementById('clique-graph-container').addEventListener('graph-tooltip', (e) => {
-            if (e.detail.show) {
-                tooltip.textContent = e.detail.text;
-                // Position 15px right and 15px down from cursor
-                tooltip.style.left = `${e.detail.x + 15}px`;
-                tooltip.style.top = `${e.detail.y + 15}px`;
-                tooltip.style.opacity = 1;
-            } else {
-                tooltip.style.opacity = 0;
-            }
-        });
     </script>
 </body>
 </html>
-
